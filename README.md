@@ -56,7 +56,7 @@ https://huggingface.co/microsoft/swin-base-patch4-window7-224
 
 ## Citation
 ```
-Mohammed, Rawa, Mina Attin, and Bryar Shareef. "BUSTR: Breast Ultrasound Text Reporting with a Descriptor-Aware Vision-Language Model." arXiv preprint arXiv:2511.20956 (2025).
+Rawa Mohammed, Mina Attin, and Bryar Shareef. "BUSTR: Breast Ultrasound Text Reporting with a Descriptor-Aware Vision-Language Model." arXiv preprint arXiv:2511.20956 (2025).
 ```
 
 
