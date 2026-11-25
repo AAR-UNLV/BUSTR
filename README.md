@@ -14,15 +14,6 @@ This repository will contain the code used in the paper once it's published ["BU
 <img width="994" height="800" alt="image" src="image/bustr.png" />
 
 
-
-
-## Quick Start
-
-Clone the repository:
-```bash
-git clone https://github.com/AAR-UNLV/BUSTR
-cd BUSTR
-```
 ## Datasets used
 
 ### BrEaST
@@ -52,6 +43,33 @@ https://huggingface.co/meta-llama/Llama-2-7b-chat
 
 ```
 https://huggingface.co/microsoft/swin-base-patch4-window7-224
+```
+
+
+## Quick Start
+
+### 1. Clone the repository:
+```bash
+git clone https://github.com/AAR-UNLV/BUSTR
+cd BUSTR
+```
+
+### 2. Run the data preprocessing
+
+```bash
+bash scripts/{dataset name}/0_prepare_dataset.sh
+```
+
+### 2. Pre-train the vision model
+
+```bash
+bash scripts/{dataset name}/1_train_vision_encoder.sh
+```
+
+### 3. Report Generation
+
+```bash
+bash scripts/{dataset name}/2_train_report_generator.sh
 ```
 
 ## Citation
