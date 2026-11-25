@@ -1,0 +1,103 @@
+import os
+from pprint import pprint
+from configs.config import parser
+from data_loading.data_module import DataModule
+from training_utils.callbacks import add_callbacks
+from models.report_generator.report_model import Model
+
+VISION_ENCODER_FILES = {'BUSBRA': 'models/vision_encoder/swin_encoder_busbra.py', 'BrEaST': 'models/vision_encoder/swin_encoder_breast.py'}
+import lightning.pytorch as pl
+import pandas as pd
+import gc
+import torch
+import shutil
+import copy
+import numpy as np
+
+def train(args):
+  
+    base_dir = args.base_dir
+    savedmodel_path = args.savedmodel_path
+    dataset_name = args.dataset
+    
+    if args.test:
+        args.metrics_location = os.path.join(savedmodel_path, f'{dataset_name}_Metrics_Fold_{args.fold_index}.csv')
+        args.losses_location = os.path.join(savedmodel_path, f'{dataset_name}_Losses_Fold_{args.fold_index}.csv')
+    else:
+        results = pd.DataFrame(columns=list(['FOLD', 'Mode', 'Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4', 'ROUGE_L', 'METEOR', 'CIDEr']))    
+        train_losses = pd.DataFrame(columns=list(['FOLD', 'Epoch', 'Step', 'CE', 'Cos_Sim', 'Combined_Loss']))    
+        os.makedirs(savedmodel_path, exist_ok=True)
+        args.metrics_location = os.path.join(savedmodel_path, f'{dataset_name}_Metrics_Fold_{args.fold_index}.csv')
+        args.losses_location = os.path.join(savedmodel_path, f'{dataset_name}_Losses_Fold_{args.fold_index}.csv')
+        results.to_csv(args.metrics_location, index = False)
+        train_losses.to_csv(args.losses_location, index = False)
+
+    print(f'\n\n\n\t\t---- FOLD {args.fold_index} STARTED---- \n\n\n')
+    args.annotation = f'{base_dir}/{dataset_name}_FOLD_{args.fold_index}.json'
+    args.base_dir = f'{base_dir}/images'
+    args.savedmodel_path = f'{savedmodel_path}/{dataset_name}_FOLD_{args.fold_index}'
+
+    args.swin_weights_path = f"./save_vision/{dataset_name}/{args.vision_version}/{dataset_name}_FOLD_{args.fold_index}/vision_encoder_weights.pth"
+
+    dm = DataModule(args)
+    callbacks = add_callbacks(args)
+
+    trainer = pl.Trainer(
+        devices=args.devices,
+        num_nodes=args.num_nodes,
+        strategy=args.strategy,
+        accelerator=args.accelerator,
+        precision=args.precision,
+        val_check_interval = args.val_check_interval,
+        limit_val_batches = args.limit_val_batches,
+        max_epochs = args.max_epochs,
+        num_sanity_val_steps = args.num_sanity_val_steps,
+        accumulate_grad_batches=args.accumulate_grad_batches,
+        callbacks=callbacks["callbacks"], 
+        logger=callbacks["loggers"],
+        enable_progress_bar=False
+    )
+    if args.test:
+        args.delta_file = os.path.join(args.savedmodel_path, "best_checkpoint.pth")
+    
+    model = Model(args)
+
+    if args.test:
+        trainer.test(model, datamodule=dm)
+    elif args.validate:
+        trainer.validate(model, datamodule=dm)
+    else:
+        trainer.fit(model, datamodule=dm)
+        
+    print(f'\n\n\n\t\t---- FOLD {args.fold_index} ENDED ----')
+
+def main():
+    args = parser.parse_args()
+    if args.dataset not in VISION_ENCODER_FILES:
+        raise ValueError(f"Unknown dataset {args.dataset}, expected BUSBRA or BrEaST")
+    if args.technical_tokens_path is None:
+        args.technical_tokens_path = f'technical_tokens/{args.dataset}.csv'
+
+    os.makedirs(args.savedmodel_path, exist_ok=True)
+    os.environ["CUDA_VISIBLE_DEVICES"]=args.device_name
+    pprint(vars(args))
+
+    model_path = "models/report_generator/report_model.py"
+    vision_encoder_path = VISION_ENCODER_FILES[args.dataset]
+    shutil.copyfile(model_path, f"{args.savedmodel_path}/VersionModel.py")
+    shutil.copyfile(vision_encoder_path, f"{args.savedmodel_path}/VersionVisionEncoder.py")
+
+    for i in range(5):
+        args_copy = copy.deepcopy(args)
+        args_copy.fold_index = i
+        train(args_copy)
+        del args_copy
+        gc.collect()
+        args_copy = copy.deepcopy(args)
+        args_copy.test = True
+        args_copy.fold_index = i
+        train(args_copy)
+        gc.collect()
+
+if __name__ == '__main__':
+    main()
