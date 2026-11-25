@@ -26,6 +26,7 @@ https://www.cancerimagingarchive.net/collection/breast-lesions-usg/
 https://www.kaggle.com/datasets/orvile/bus-bra-a-breast-ultrasound-dataset
 ```
 
+
 ## Pretrained models used
 
 ### 1. Llama 3.1
@@ -60,17 +61,18 @@ cd BUSTR
 bash scripts/{dataset name}/0_prepare_dataset.sh
 ```
 
-### 2. Pre-train the vision model
+### 3. Pre-train the vision model
 
 ```bash
 bash scripts/{dataset name}/1_train_vision_encoder.sh
 ```
 
-### 3. Report Generation
+### 4. Report Generation
 
 ```bash
 bash scripts/{dataset name}/2_train_report_generator.sh
 ```
+
 
 ## Citation
 ```
